@@ -5,8 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "start": "tsx --watch node_modules/.bin/functions-framework --target=helloGET --source=./src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsx --inspect --watch node_modules/.bin/functions-framework --target=helloGET --source=./src/index.ts"
   },
   "author": "",
   "license": "ISC",
