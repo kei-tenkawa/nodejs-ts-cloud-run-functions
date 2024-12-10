@@ -6,13 +6,13 @@
   "type": "module",
   "scripts": {
     "start": "tsx --inspect --watch node_modules/.bin/functions-framework --target=helloGET --source=./src/index.ts",
-    "build": "npx parcel build ./src/index.ts --no-cache"
+    "check-types": "tsc --noEmit",
+    "build": "esbuild ./src/index.ts --bundle --minify --sourcemap --platform=node --outfile=./dist/index.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@parcel/validator-typescript": "^2.13.2",
-    "parcel": "^2.13.2",
+    "esbuild": "0.24.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

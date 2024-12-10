@@ -3,11 +3,11 @@
     "target": "es2022",
     "module": "node16",
     "moduleResolution": "node16",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {
-      "~/*": ["./*"]
+      "@/*": ["./*"]
     },
-    "rootDirs": ["."],
+    "rootDirs": ["./src"],
     "outDir": "./dist",
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
