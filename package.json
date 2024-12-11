@@ -7,12 +7,17 @@
   "scripts": {
     "start": "tsx --inspect --watch node_modules/.bin/functions-framework --target=helloGET --source=./src/index.ts",
     "check-types": "tsc --noEmit",
-    "build": "esbuild ./src/index.ts --bundle --minify --sourcemap --platform=node --outfile=./dist/index.js"
+    "build": "esbuild ./src/index.ts --bundle --minify --sourcemap --platform=node --outfile=./dist/index.js",
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "esbuild": "0.24.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-jest-resolver": "^2.0.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

@@ -1,1 +1,1 @@
-export const hoge = () => "hogehoge"
+export const hoge: () => string = () => "hogehoge";
