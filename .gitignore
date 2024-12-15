@@ -3,3 +3,5 @@ package-lock.json
 .parcel-cache
 dist
 coverage
+.terraform*
+terraform.tfstate*
