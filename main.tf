@@ -8,8 +8,11 @@ terraform {
 }
 
 provider "google" {
-  project = "ts-cloudrun-functions"
+  project = "advent-calendar-2024-w"
   region  = "asia-northeast1"
+}
+
+data "google_project" "project" {
 }
 
 resource "random_id" "default" {
@@ -54,6 +57,7 @@ resource "google_cloudfunctions2_function" "default" {
     max_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
+    # service_account_email = google_service_account.cloud-run-functions.email
   }
 }
 
@@ -62,6 +66,42 @@ resource "google_cloud_run_service_iam_member" "member" {
   service  = google_cloudfunctions2_function.default.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+resource "google_secret_manager_secret" "my-secret" {
+  secret_id = "my-secret"
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "my-secret-version" {
+  secret      = google_secret_manager_secret.my-secret.id
+  secret_data = file("${path.module}/my-secret.json")
+
+  deletion_policy = "DELETE"
+}
+
+data "google_secret_manager_secret_version" "my-secret-version-latest" {
+  secret  = google_secret_manager_secret.my-secret.id
+  version = "latest"
+
+  depends_on = [
+    google_secret_manager_secret_version.my-secret-version
+  ]
+}
+
+resource "google_secret_manager_secret_iam_member" "secretmanager-my-secret" {
+  secret_id = google_secret_manager_secret.my-secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+
+  condition {
+   title       = "my-secret iam"
+   description = "my-secret へのアクセス許可のみ許されているIAM"
+   expression  = "resource.name.startsWith(\"${google_secret_manager_secret.my-secret.name}\")"
+  }
 }
 
 output "function_uri" {
