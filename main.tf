@@ -7,6 +7,14 @@ terraform {
   }
 }
 
+locals {
+  project         = "advent-calendar-2024-w"
+  region          = "asia-northeast1"
+  zone            = "asia-northeast1-a"
+  domain          = "api.tenkawa-k.com"
+  ESPv2_image_ver = "2.51.0"
+}
+
 provider "google" {
   project = "advent-calendar-2024-w"
   region  = "asia-northeast1"
@@ -57,13 +65,13 @@ resource "google_cloudfunctions2_function" "default" {
     max_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
-    # service_account_email = google_service_account.cloud-run-functions.email
   }
 }
 
-resource "google_cloud_run_service_iam_member" "member" {
+resource "google_cloud_run_v2_service_iam_member" "member" {
+  project  = local.project
+  name     = google_cloudfunctions2_function.default.name
   location = google_cloudfunctions2_function.default.location
-  service  = google_cloudfunctions2_function.default.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
@@ -98,9 +106,95 @@ resource "google_secret_manager_secret_iam_member" "secretmanager-my-secret" {
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 
   condition {
-   title       = "my-secret iam"
-   description = "my-secret へのアクセス許可のみ許されているIAM"
-   expression  = "resource.name.startsWith(\"${google_secret_manager_secret.my-secret.name}\")"
+    title       = "my-secret Access IAM"
+    description = "my-secret へのアクセスをCloud Run functionsに付与"
+    expression  = "resource.name.startsWith(\"${google_secret_manager_secret.my-secret.name}\")"
+  }
+}
+
+resource "google_endpoints_service" "openapi_service" {
+  service_name   = local.domain
+  project        = local.project
+  openapi_config = file("${path.module}/openapi-functions.yml")
+}
+
+resource "google_project_iam_member" "espv2_service_account_service_controller" {
+  project = data.google_project.project.project_id
+  role    = "roles/servicemanagement.serviceController"
+  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "espv2_service_account_function_invoker" {
+  project = data.google_project.project.project_id
+  role    = "roles/cloudfunctions.invoker"
+  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+resource "null_resource" "building_new_image" {
+  provisioner "local-exec" {
+    command     = "chmod +x gcloud_build_image; ./gcloud_build_image -s $cloud_run_hostname -c $config_id -p ${local.project} -v ${local.ESPv2_image_ver}"
+    environment = {
+      config_id          = google_endpoints_service.openapi_service.config_id
+      cloud_run_hostname = google_endpoints_service.openapi_service.service_name
+    } 
+  }
+
+  depends_on = [
+    google_endpoints_service.openapi_service
+  ]
+}
+
+resource "google_cloud_run_v2_service" "gateway" {
+  name          = "gateway"
+  location      = local.region
+  deletion_protection = false
+
+  template { 
+    containers {
+      image = format(
+        "gcr.io/%s/endpoints-runtime-serverless:%s-%s-%s",
+        local.project,
+        local.ESPv2_image_ver,
+        google_endpoints_service.openapi_service.service_name,
+        google_endpoints_service.openapi_service.config_id
+      )
+      resources {
+        limits = {
+          "cpu" = "1"
+          "memory" = "1Gi"
+        }
+        cpu_idle          = true
+        startup_cpu_boost = false
+      }
+    }
+  }
+
+  depends_on = [
+    google_endpoints_service.openapi_service,
+    null_resource.building_new_image
+  ]
+}
+
+resource "google_cloud_run_v2_service_iam_binding" "binding" {
+  project  = local.project
+  location = google_cloud_run_v2_service.gateway.location
+  name     = google_cloud_run_v2_service.gateway.name
+  role     = "roles/run.invoker"
+  members = [
+    "allUsers"
+  ]
+}
+
+resource "google_cloud_run_domain_mapping" "default" {
+  location = local.region
+  name     = local.domain
+
+  metadata {
+    namespace = local.project
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.gateway.name
   }
 }
 

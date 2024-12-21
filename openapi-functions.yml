@@ -1,0 +1,28 @@
+swagger: '2.0'
+info:
+  title: Cloud Endpoints + GCF
+  description: Sample API on Cloud Endpoints with a Google Cloud Functions backend
+  version: 1.0.0
+host: api.tenkawa-k.com
+schemes:
+  - https
+produces:
+  - application/json
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+paths:
+  /hello:
+    get:
+      summary: Greet a user
+      operationId: hello
+      x-google-backend:
+        address: https://asia-northeast1-advent-calendar-2024-w.cloudfunctions.net/sample-crf
+        protocol: h2
+      responses:
+        '200':
+          description: A successful response
+          schema:
+            type: string
