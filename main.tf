@@ -11,7 +11,7 @@ locals {
   project         = "advent-calendar-2024-w"
   region          = "asia-northeast1"
   zone            = "asia-northeast1-a"
-  domain          = "gateway-4xrtzwvk2q-an.a.run.app"
+  domain          = "api.tenkawa-k.com"
   ESPv2_image_ver = "2.51.0"
 }
 
@@ -190,6 +190,19 @@ resource "google_cloud_run_v2_service_iam_binding" "binding" {
   members = [
     "allUsers"
   ]
+}
+
+resource "google_cloud_run_domain_mapping" "default" {
+  location = local.region
+  name     = local.domain
+
+  metadata {
+    namespace = local.project
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.gateway.name
+  }
 }
 
 output "function_uri" {
