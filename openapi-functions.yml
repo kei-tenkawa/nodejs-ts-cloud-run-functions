@@ -3,7 +3,7 @@ info:
   title: Cloud Endpoints + GCF
   description: Sample API on Cloud Endpoints with a Google Cloud Functions backend
   version: 1.0.0
-host: api.tenkawa-k.com
+host: ${CLOUD_RUN_HOST}
 schemes:
   - https
 produces:
@@ -13,13 +13,15 @@ securityDefinitions:
     type: "apiKey"
     name: "x-api-key"
     in: "header"
+security:
+  - api_key: []
 paths:
   /hello:
     get:
       summary: Greet a user
       operationId: hello
       x-google-backend:
-        address: https://asia-northeast1-advent-calendar-2024-w.cloudfunctions.net/sample-crf
+        address: ${CLOUD_RUN_FUNCTIONS_HOST}
         protocol: h2
       responses:
         '200':
