@@ -5,3 +5,4 @@ dist
 coverage
 .terraform*
 terraform.tfstate*
+.env.yml

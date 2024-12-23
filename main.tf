@@ -73,7 +73,7 @@ resource "google_cloud_run_v2_service_iam_member" "member" {
   name     = google_cloudfunctions2_function.default.name
   location = google_cloudfunctions2_function.default.location
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 }
 
 resource "google_secret_manager_secret" "my-secret" {
@@ -204,6 +204,24 @@ resource "google_cloud_run_domain_mapping" "default" {
     route_name = google_cloud_run_v2_service.gateway.name
   }
 }
+
+# resource "google_cloud_scheduler_job" "scheduler" {
+#   name             = "functions-scheduler"
+#   description      = "7:00/13:00/17:00で定期処理を実行する"
+#   schedule         = "0 7,13,17 * * *"
+#   time_zone        = "Asia/Tokyo"
+#   region           = "asia-northeast1"
+#   attempt_deadline = "180s"
+  
+#   http_target {
+#     http_method = "POST"
+#     uri         = "${local.domain}/hello"
+#   }
+  
+#   depends_on = [
+#     google_cloudfunctions2_function.default
+#   ]
+# }
 
 output "function_uri" {
   value = google_cloudfunctions2_function.default.service_config[0].uri
