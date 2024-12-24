@@ -205,23 +205,27 @@ resource "google_cloud_run_domain_mapping" "default" {
   }
 }
 
-# resource "google_cloud_scheduler_job" "scheduler" {
-#   name             = "functions-scheduler"
-#   description      = "7:00/13:00/17:00で定期処理を実行する"
-#   schedule         = "0 7,13,17 * * *"
-#   time_zone        = "Asia/Tokyo"
-#   region           = "asia-northeast1"
-#   attempt_deadline = "180s"
+resource "google_cloud_scheduler_job" "scheduler" {
+  name             = "functions-scheduler"
+  description      = "7:00/13:00/17:00で定期処理を実行する"
+  schedule         = "0 7,13,17 * * *"
+  time_zone        = "Asia/Tokyo"
+  region           = "asia-northeast1"
+  attempt_deadline = "180s"
   
-#   http_target {
-#     http_method = "POST"
-#     uri         = "${local.domain}/hello"
-#   }
+  http_target {
+    http_method = "GET"
+    uri         = google_cloudfunctions2_function.default.service_config[0].uri
+    oidc_token {
+      service_account_email = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+      audience              = google_cloudfunctions2_function.default.service_config[0].uri
+    }
+  }
   
-#   depends_on = [
-#     google_cloudfunctions2_function.default
-#   ]
-# }
+  depends_on = [
+    google_cloudfunctions2_function.default
+  ]
+}
 
 output "function_uri" {
   value = google_cloudfunctions2_function.default.service_config[0].uri
